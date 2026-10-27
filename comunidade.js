@@ -121,7 +121,7 @@ function renderAccount() {
   const root = e("account");
   root.replaceChildren();
   if (!user) {
-    text("p", "Pesquise e envie relatos sem criar conta.", root);
+    text("p", "Pesquise sem criar conta. Para registrar relatos, entre com a senha compartilhada dos responsáveis.", root);
     link(root, "Entrar na conta", "/conexaocomunidade/entrar.html?next=app");
     link(root, "Cadastrar empresa", "/conexaocomunidade/cadastro.html");
     return;
@@ -133,12 +133,13 @@ function renderAccount() {
   actions.className = "actions";
   if (admin) {
     link(actions, "Registros de atividade", "/conexaocomunidade/admin-logs.html");
-    link(actions, "Gerenciar contas", "/conexaocomunidade/contas.html");
+    link(actions, "Coordenação", "/conexaocomunidade/coordenacao.html");
+    link(actions, "Responsáveis", "/conexaocomunidade/contas.html");
     link(actions, "Aprovar e gerenciar imagens", "/conexaocomunidade/admin-imagens.html");
     link(actions, "Ler relatos da comunidade", "/conexaocomunidade/admin-relatos.html");
     link(actions, "Gerenciar empresas", "/conexaocomunidade/teste.html?area=business");
   } else link(actions, "Minha empresa e fotos", "/conexaocomunidade/teste.html?area=business");
-  link(actions, "Perfil, senha e sair", "/conexaocomunidade/entrar.html");
+  link(actions, "Perfil e sair", "/conexaocomunidade/entrar.html");
 }
 function show(r) {
   selected = r;

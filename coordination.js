@@ -63,7 +63,7 @@
       };
       editor.append(summary, form);
       article.append(title, details, editor);
-      if (company.informal) {
+      if (company.informal && !data.shared) {
         const access = document.createElement('details');
         const label = document.createElement('summary');
         label.textContent = 'Acesso do empreendedor';

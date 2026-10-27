@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "companies": [],
+  "reports": [],
+  "entries": [],
+  "profiles": {},
+  "users": [],
+  "assets": [],
+  "aboutSlots": [],
+  "events": [
+    {
+      "id": "migrated-0",
+      "time": 1793118746310,
+      "type": "Verificação inicial: leitura e gravação direta no GitHub",
+      "name": "ILAB",
+      "status": "Salvo"
+    }
+  ]
+}

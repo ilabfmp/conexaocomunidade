@@ -1,0 +1,81 @@
+import assert from 'node:assert/strict';
+import {GitHubDirect,emptyState,DATA_PATH} from '../github-direct.mjs';
+import {to64,from64} from '../github-store.mjs';
+const enc=new TextEncoder(),dec=new TextDecoder(),password='senha-ficticia-para-testes',testToken='fake-github-test-token';
+const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));
+const material=await crypto.subtle.importKey('raw',enc.encode(password),'PBKDF2',false,['deriveKey']);
+const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:600000,hash:'SHA-256'},material,{name:'AES-GCM',length:256},false,['encrypt']);
+const ciphertext=await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData:enc.encode('ilabfmp/conexaocomunidade:v1')},key,enc.encode(testToken));
+const vault={version:1,iterations:600000,salt:to64(salt),iv:to64(iv),ciphertext:to64(new Uint8Array(ciphertext))};
+let sequence=0,now=Date.now(),conflict=false;
+const files=new Map([[DATA_PATH,{sha:'initial',value:emptyState()}]]),calls=[];
+const storage=()=>{const m=new Map();return {getItem:k=>m.get(k)||null,setItem:(k,v)=>m.set(k,v),removeItem:k=>m.delete(k)};};
+const fetcher=async(url,options={})=>{
+ calls.push({url,method:options.method||'GET'});const method=options.method||'GET';
+ if(url==='/conexaocomunidade/acesso.json')return Response.json(vault);
+ const publicRequest=url.startsWith('/conexaocomunidade/');
+ const path=publicRequest?url.slice('/conexaocomunidade/'.length).split('?')[0]:url.split('/contents/')[1];
+ assert(path,'unexpected network destination '+url);
+ const existing=files.get(path);
+ if(publicRequest){assert.equal(method,'GET');return existing?Response.json(existing.value):Response.json({}, {status:404});}
+ assert(url.startsWith('https://api.github.com/repos/ilabfmp/conexaocomunidade/contents/'));
+ assert.equal(options.headers.Authorization,'Bearer '+testToken);
+ if(method==='GET')return existing?Response.json({sha:existing.sha,encoding:'base64',content:to64(enc.encode(JSON.stringify(existing.value)))}):Response.json({}, {status:404});
+ const body=JSON.parse(options.body);
+ if(method==='PUT'){
+  if(path===DATA_PATH&&conflict){conflict=false;return Response.json({}, {status:409});}
+  if(existing?body.sha!==existing.sha:body.sha!==undefined)return Response.json({}, {status:409});
+  const value=JSON.parse(dec.decode(from64(body.content))),sha=String(++sequence);files.set(path,{value,sha});return Response.json({content:{sha}});
+ }
+ if(method==='DELETE'){if(!existing||body.sha!==existing.sha)return Response.json({}, {status:409});files.delete(path);return Response.json({});}
+ throw Error('Unexpected method');
+};
+const tabStorage=storage(),app=new GitHubDirect({fetch:fetcher,storage:tabStorage,now:()=>now}),visitor=new GitHubDirect({fetch:fetcher,storage:storage(),now:()=>now});
+const request=async(runtime,endpoint,method='GET',body={},expected=200,params)=>{const r=await runtime.handle(endpoint,method,body,params);const d=await r.json();assert.equal(r.status,expected,JSON.stringify(d));return d;};
+assert.equal((await request(visitor,'companies')).companies.length,0);
+for(const ep of ['companies','reports','company-image','about-images','community','coordination','photo'])await request(visitor,ep,'POST',{},401);
+await request(app,'auth','POST',{username:'Leandro',password:'errada'},400);
+await request(app,'auth','POST',{username:'__proto__',password},400);
+assert.equal((await request(app,'auth','POST',{username:'Leandro',password})).user.shared,true);
+const secondPage=new GitHubDirect({fetch:fetcher,storage:tabStorage,now:()=>now});assert.equal((await request(secondPage,'auth')).user.name,'Leandro');
+let c=await request(app,'companies','POST',{action:'create'});
+const saved={name:'Padaria Ação & Café',category:'Alimentos',description:'Pães feitos diariamente.',address:'Rua de Teste, Frei Damião',published:true,lat:-27.645,lng:-48.669,services:[{name:'Pão francês',unit:'unidade'}]};
+c.revision=(await request(app,'companies','POST',{id:c.id,revision:c.revision,data:saved})).revision;
+await request(app,'companies','POST',{id:c.id,revision:'stale',data:saved},409);
+visitor.cache=null;assert.equal((await request(visitor,'companies')).companies[0].name,saved.name);
+assert.equal((await request(visitor,'community')).records[0].title,saved.name);
+const png='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jN1sAAAAASUVORK5CYII=';
+const file=()=>new File([from64(png)],'pixel.png',{type:'image/png'});
+function upload(company,revision,kind='gallery',replace){const f=new FormData();f.set('company',company);f.set('revision',revision);f.set('kind',kind);f.set('image',file());if(replace)f.set('replace',replace);return f;}
+let image=await request(app,'company-image','POST',upload(c.id,c.revision));c.revision=image.revision;
+assert.equal(image.images.gallery.length,1);
+let moderation=await request(app,'admin-images');const asset=moderation.companies[0].images[0];
+await request(app,'company-image','PATCH',{id:asset.id,revision:asset.revision,approval:'rejected'});
+visitor.cache=null;assert.equal((await request(visitor,'companies')).companies[0].gallery.length,0);
+const rejected=await visitor.handle('company-image','GET',{},new URLSearchParams({id:asset.id}));assert.equal(rejected.status,404);
+moderation=await request(app,'admin-images');await request(app,'company-image','PATCH',{id:asset.id,revision:moderation.companies[0].images[0].revision,approval:'approved'});
+visitor.cache=null;assert.equal((await visitor.handle('company-image','GET',{},new URLSearchParams({id:asset.id}))).headers.get('Content-Type'),'image/png');
+let other=await request(app,'companies','POST',{action:'create'});await request(app,'companies','POST',{id:other.id,revision:other.revision,data:{...saved,gallery:[asset.id]}},400);
+const beforeFiles=files.size;conflict=true;await request(app,'company-image','POST',upload(c.id,c.revision),409);assert.equal(files.size,beforeFiles,'failed metadata must clean orphan upload');
+image=await request(app,'company-image','POST',upload(c.id,c.revision,'gallery',asset.id));c.revision=image.revision;assert(!files.has(asset.path));
+c.revision=(await request(app,'company-image','DELETE',{company:c.id,id:image.id,revision:c.revision})).revision;
+const about=await request(visitor,'about-images');assert(about.slots.some(s=>s.slot==='manager'&&s.defaultSrc.includes('leandro')));
+const form=new FormData();form.set('slot','manager');form.set('revision','');form.set('image',file());const aboutImage=await request(app,'about-images','POST',form);
+await request(app,'about-images','DELETE',{slot:'manager',revision:aboutImage.revision});
+const informal=await request(app,'coordination','POST',{...saved,provider:'Responsável fictício'});assert.equal((await request(app,'coordination')).shared,true);
+await request(app,'coordination','PATCH',{id:informal.id,revision:informal.revision,data:{name:'Autônomo atualizado'}});
+const report=await request(app,'reports','POST',{anonymous:true,title:'Teste de iluminação',address:'Rua fictícia',description:'Registro fictício para teste automatizado.',images:[{body:png,type:'image/png'}]});
+const inbox=await request(app,'reports');assert.equal(inbox.unread,1);assert.equal(inbox.reports[0].photoCount,1);
+await request(app,'reports','PATCH',{id:report.id,revision:inbox.reports[0].revision,status:'Aprovado'});
+await request(visitor,'reports','GET',{},401);
+const photoForm=new FormData();photoForm.set('photo',file());const photo=await request(app,'photo','POST',photoForm);
+await request(app,'community','POST',{action:'profile',revision:null,data:{name:'Leandro',neighborhood:'Frei Damião'}});
+const entry=await request(app,'community','POST',{data:{kind:'place',title:'Local de teste',category:'Escola',description:'Descrição de teste comunitário.',address:'Rua de teste',photo:photo.id,gallery:[],lat:null,lng:null}});
+await request(app,'community','PATCH',{id:entry.id,revision:entry.revision,data:{kind:'place',title:'Local atualizado',category:'Escola',description:'Descrição de teste comunitário.',address:'Rua de teste',photo:photo.id,gallery:[],lat:null,lng:null}});
+assert((await request(app,'admin-activity')).events.length>0);assert.equal((await request(app,'test-users')).shared,true);
+await request(app,'companies','DELETE',{id:c.id,revision:c.revision});
+assert(!JSON.stringify(files.get(DATA_PATH).value).includes(testToken));assert(!JSON.stringify(files.get(DATA_PATH).value).includes(password));
+await request(app,'auth','POST',{action:'logout'});assert.equal((await request(secondPage,'auth')).user,null);
+await request(app,'auth','POST',{username:'Leandro',password});now+=31*60000;await request(app,'companies','POST',{action:'create'},401);
+assert(calls.every(c=>!c.url.includes('chatgpt.site')));
+console.log('PASS: login compartilhado, sessão entre páginas, leitura pública, empresas, serviços, coordenadas, conflitos, upload/substituição/exclusão/moderação de fotos, fotos Sobre, coordenação, relatos com imagens, mapa/perfil, atividade, logout e expiração.');

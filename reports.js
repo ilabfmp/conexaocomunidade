@@ -133,7 +133,7 @@ async function loadInbox() {
           if (
             status === "Rejeitado" &&
             !confirm(
-              "Rejeitar este relato por conteúdo impróprio ou fora do contexto? Ele continuará restrito à administração.",
+              "Rejeitar este relato por conteúdo impróprio ou fora do contexto? Ele deixará de ser exibido como aprovado, mas continuará público no repositório.",
             )
           )
             return;
@@ -190,7 +190,7 @@ if (reportEl("inbox-list")) {
         ),
       );
     a.href = url;
-    a.download = "Relatos-Comunidade.private.json";
+    a.download = "Relatos-Comunidade.json";
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
@@ -316,3 +316,14 @@ if (reportEl("report-photos"))
     reportEl("report-photo-count").textContent =
       reportEl("report-photos").files.length + " foto(s) selecionada(s). Até 3 por relato.";
   };
+
+// Shared editing access: explain the requirement before the visitor fills a report.
+if (reportForm) {
+  reportForm.inert = true;
+  fetch('/api/auth').then(readApiResponse).then(data => {
+    if (data.user) {reportForm.inert = false;return;}
+    const box = reportEl('report-status');box.hidden = false;
+    box.textContent = 'Para enviar, entre com a senha compartilhada dos responsáveis. ';
+    const link = document.createElement('a');link.href = '/conexaocomunidade/entrar.html?next=report-form';link.textContent = 'Entrar para registrar relato';box.append(link);
+  }).catch(error => {const box = reportEl('report-status');box.hidden = false;box.textContent = error.message;});
+}

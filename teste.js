@@ -62,7 +62,7 @@ document
   .querySelectorAll("[data-view]")
   .forEach((b) => b.addEventListener("click", () => switchView(b.dataset.view)));
 async function api(path, method = "GET", data) {
-  if (!connected) throw Error("Abra a versão conectada para salvar com proteção no servidor.");
+  if (!connected) throw Error("Abra a versão conectada para salvar os cadastros.");
   const options = { method, cache: "no-store" };
   if (data !== undefined) {
     options.headers = { "Content-Type": "application/json" };
@@ -280,9 +280,9 @@ $("replace-file").onchange = (e) => {
   e.target.value = "";
   if (file && target) upload(file, target.kind, target.id);
 };
-function editCompany(c) {
-  form.hidden = adminAccess && !c;
-  document.querySelector(".business-layout").classList.toggle("admin-list-only", adminAccess && !c);
+function editCompany(c, creating = false) {
+  form.hidden = adminAccess && !c && !creating;
+  document.querySelector(".business-layout").classList.toggle("admin-list-only", adminAccess && !c && !creating);
   companyId = c?.id || null;
   companyRevision = c?.revision || null;
   logo = c?.logo || null;
@@ -325,7 +325,7 @@ async function load() {
     const data = await api("/api/companies");
     accessRequired = false;
     adminAccess = ["owner", "company-admin"].includes(data.user?.role);
-    $("new-company").hidden = adminAccess;
+    $("new-company").hidden = false;
     const panelHeading = $("business-panel").querySelector(".page-heading");
     panelHeading.querySelector(".eyebrow").textContent = adminAccess
       ? "ADMINISTRAÇÃO"
@@ -397,7 +397,7 @@ async function load() {
 }
 async function ensureCompany() {
   if (companyId) return companyId;
-  if (adminAccess) throw Error("Selecione uma empresa registrada para gerenciar.");
+
   const created = await api("/api/companies", "POST", { action: "create" });
   companyId = created.id;
   companyRevision = created.revision;
@@ -460,7 +460,7 @@ form.addEventListener("submit", async (e) => {
     media();
     setBusy(true);
     dirty = false;
-    tell("Empresa salva. Seus dados foram armazenados com criptografia.");
+    tell("Empresa salva. Os dados são públicos; a atualização do catálogo pode levar alguns instantes.");
     await load();
   } catch (e) {
     tell(e.message, true);
@@ -469,10 +469,10 @@ form.addEventListener("submit", async (e) => {
   }
 });
 $("new-company").onclick = () => {
-  if (adminAccess) return;
+
   if (busy) return;
   if (dirty && !confirm("Descartar os campos ainda não salvos?")) return;
-  editCompany(null);
+  editCompany(null, true);
 };
 async function upload(file, kind, replace = null) {
   if (!file || busy) return;
@@ -559,11 +559,11 @@ $("export-company").onclick = () => {
   );
   const a = document.createElement("a");
   a.href = url;
-  a.download = "dados-da-minha-empresa.private.json";
+  a.download = "dados-da-minha-empresa.json";
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
   tell(
-    "Exportação feita. O arquivo contém dados legíveis, incluindo a observação privada. Imagens são referências, sem os arquivos.",
+    "Exportação feita. O arquivo contém dados legíveis, incluindo a observação adicional. Imagens são referências, sem os arquivos.",
   );
 };
 function geo(success) {
@@ -775,7 +775,7 @@ $("install-app").onclick = () => {
   const d = document.createElement("dialog");
   d.className = "panel";
   d.innerHTML =
-    '<div class="android-install"><h2>Instalar aplicativo</h2><a href="/conexaocomunidade/downloads/comunidade-conectada-teste.apk">Baixar APK de testes para Android</a><small>Android 6.0 ou superior, com Android System WebView atualizado. O aplicativo usa os mesmos dados do site e precisa de internet. Para instalar o APK de testes, o Android pode solicitar autorização para instalar por este navegador.</small><button class="primary pwa" type="button" hidden>Instalar pelo navegador</button><p>Também é possível instalar pelo menu do navegador. No iPhone, use Safari → Compartilhar → Adicionar à Tela de Início.</p><button type="button" class="secondary close-install">Fechar</button></div>';
+    '<div class="android-install"><h2>Instalar aplicativo</h2><a href="/conexaocomunidade/comunidade.html?app=1">Abrir versão para celular</a><small>Use a instalação pelo navegador para acessar esta versão independente. O APK antigo não foi atualizado.</small><button class="primary pwa" type="button" hidden>Instalar pelo navegador</button><p>Também é possível instalar pelo menu do navegador. No iPhone, use Safari → Compartilhar → Adicionar à Tela de Início.</p><button type="button" class="secondary close-install">Fechar</button></div>';
   const pwa = d.querySelector(".pwa");
   pwa.hidden = !installPrompt;
   pwa.onclick = async () => {

@@ -34,16 +34,18 @@ if (el("login")) {
     e.preventDefault();
     action(e.target, async () => {
       const result = await call("/api/auth", "POST", fields(e.target));
-      if (result.role === "coordination") {location.href = "/coordenacao.html";return;}
+      if (result.role === "coordination") {location.href = "/conexaocomunidade/coordenacao.html";return;}
       e.target.reset();
       location.href =
-        new URLSearchParams(location.search).get("next") === "app"
-          ? "/comunidade.html?app=1&view=account"
+        new URLSearchParams(location.search).get("next") === "report-form"
+          ? "/conexaocomunidade/relatar.html"
+          : new URLSearchParams(location.search).get("next") === "app"
+          ? "/conexaocomunidade/comunidade.html?app=1&view=account"
           : new URLSearchParams(location.search).get("next") === "reports"
-            ? "/admin-relatos.html"
+            ? "/conexaocomunidade/admin-relatos.html"
             : new URLSearchParams(location.search).get("next") === "business"
-              ? "/teste.html?area=business"
-              : "/teste.html";
+              ? "/conexaocomunidade/teste.html?area=business"
+              : "/conexaocomunidade/teste.html";
     });
   };
   call("/api/auth")
@@ -68,16 +70,16 @@ if (el("login")) {
         el("admin-access-summary").hidden = !admin;
         el("session-continue").href =
           new URLSearchParams(location.search).get("next") === "reports" && admin
-            ? "/admin-relatos.html"
-            : "/teste.html?area=business";
+            ? "/conexaocomunidade/admin-relatos.html"
+            : "/conexaocomunidade/teste.html?area=business";
         el("session-continue").textContent =
           new URLSearchParams(location.search).get("next") === "reports" && admin
             ? "Acessar relatos"
             : admin
               ? "Gerenciar empresas"
               : "Acessar minha empresa";
-        if (coordinator) {el("session-continue").href = "/coordenacao.html";el("session-continue").textContent = "Acompanhar projeto";}
-        if (d.user.auth === "local") {
+        if (coordinator) {el("session-continue").href = "/conexaocomunidade/coordenacao.html";el("session-continue").textContent = "Acompanhar projeto";}
+        if (d.user.auth === "local" && !d.user.shared) {
           el("change").hidden = false;
           el("password-panel").hidden = false;
           el("recovery-email-panel").hidden = false;
@@ -153,7 +155,8 @@ async function users() {
       el("reset").hidden = false;
       el("reset").scrollIntoView({ behavior: "smooth" });
     };
-    row.append(p, toggle, reset);
+    if (d.shared) { p.textContent = u.name + " · " + u.username + " · responsável (acesso compartilhado)"; row.append(p); }
+    else row.append(p, toggle, reset);
     el("users").append(row);
   }
 }
@@ -189,7 +192,7 @@ if (el("signup-company")) {
     e.preventDefault();
     action(form, async () => {
       const data = fields(form);
-      if (data.password !== data.confirmPassword) throw Error("As senhas precisam ser iguais.");
+      if (data.confirmPassword !== undefined && data.password !== data.confirmPassword) throw Error("As senhas precisam ser iguais.");
       await call("/api/auth", "POST", {
         action: "register-company",
         name: data.name,
@@ -198,13 +201,13 @@ if (el("signup-company")) {
         password: data.password,
       });
       form.reset();
-      location.href = "/teste.html?area=business";
+      location.href = "/conexaocomunidade/teste.html?area=business";
     });
   };
   call("/api/auth")
     .then((d) => {
       if (d.user && ["company", "company-admin", "owner"].includes(d.user.role))
-        location.replace("/teste.html?area=business");
+        location.replace("/conexaocomunidade/teste.html?area=business");
       else if (d.user)
         status(
           "Você está em uma conta de cliente. Para cadastrar um negócio, use sua conta de empresa.",
@@ -253,7 +256,7 @@ if (el("recovery-reset")) {
     e.preventDefault();
     action(e.target, async () => {
       const data = fields(e.target);
-      if (data.password !== data.confirmPassword) throw Error("As senhas precisam ser iguais.");
+      if (data.confirmPassword !== undefined && data.password !== data.confirmPassword) throw Error("As senhas precisam ser iguais.");
       const d = await call("/api/password-recovery", "POST", {
         action: "reset",
         token,

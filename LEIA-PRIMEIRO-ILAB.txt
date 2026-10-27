@@ -1,7 +1,7 @@
-CONEXÃO COMUNIDADE — PACOTE PARA O ILAB
+CONEXÃO COMUNIDADE — INTERFACE ORIGINAL RESTAURADA
 
-Extraia o conteúdo e envie arquivos e pastas à raiz do repositório conexaocomunidade. A página inicial é index.html. No GitHub, em Settings > Pages, escolha a branch main e a pasta / (root).
+Abra index.html pelo GitHub Pages. Use a mesma senha compartilhada já fornecida.
 
-A interface se comunica com a ponte já publicada; ela foi configurada para aceitar o endereço do ILAB e gravar no repositório ilabfmp/conexaocomunidade. O token está armazenado como segredo na ponte existente, não neste pacote. Assim esta instalação depende da continuidade do serviço da ponte.
+As telas, CSS, fundos, logos e recursos do pacote original foram restaurados. A leitura e gravação são feitas diretamente no GitHub, sem o servidor externo.
 
-O pacote não inclui a chave de criptografia nem os JSONs de contas e relatos. Faça backup antes de substituir arquivos. Os fluxos completos de login, gravação e imagens devem ser testados após publicação. A organização em pastas por empresa ainda não está concluída.
+Consulte README-INDEPENDENTE.md para funcionalidades, dados preservados, limites de acesso compartilhado e testes. Os arquivos criptografados antigos permanecem preservados, mas não foram importados.

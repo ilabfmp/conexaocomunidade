@@ -63,7 +63,7 @@
       };
       editor.append(summary, form);
       article.append(title, details, editor);
-      if (company.informal) {
+      if (company.informal && !data.shared) {
         const access = document.createElement('details');
         const label = document.createElement('summary');
         label.textContent = 'Acesso do empreendedor';
@@ -86,7 +86,7 @@
             try {
               const credentials=Object.fromEntries(new FormData(accessForm));
               await readApiResponse(await fetch('/api/coordination',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'release-account',id:company.id,revision:company.revision,accountRevision:company.account?.revision,...credentials})}));
-              location.href='/coordenacao.html?acesso=1';
+              location.href='/conexaocomunidade/coordenacao.html?acesso=1';
             } catch(error) {notice.textContent=error.message;} finally {release.disabled=false;}
           };
           access.append(accessForm);
@@ -177,7 +177,7 @@
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(data),
       }));
-      location.href = "/coordenacao.html?salvo=1";
+      location.href = "/conexaocomunidade/coordenacao.html?salvo=1";
     } catch (error) { status.textContent = error.message; }
     finally { saving = false; button.disabled = false; }
   };

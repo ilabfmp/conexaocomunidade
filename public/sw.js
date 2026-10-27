@@ -1,7 +1,7 @@
-const CACHE = "conexao-static-v79-marca-cartaz";
+const CACHE = "conexao-original-github-v1";
 self.addEventListener("install", (event) =>
   event.waitUntil(
-    caches.open(CACHE).then((c) => c.addAll(["/offline.html", "/icon-192.png", "/icon-512.png", "/fundos-paginas.css", "/brand/fundo-offline-v2.webp"])),
+    caches.open(CACHE).then((c) => c.addAll(["/conexaocomunidade/offline.html", "/conexaocomunidade/icon-192.png", "/conexaocomunidade/icon-512.png", "/conexaocomunidade/fundos-paginas.css", "/conexaocomunidade/brand/fundo-offline-v2.webp"])),
   ),
 );
 self.addEventListener("activate", (event) =>
@@ -22,9 +22,9 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
   if (event.request.mode === "navigate") {
-    event.respondWith(fetch(event.request).catch(() => caches.match("/offline.html")));
+    event.respondWith(fetch(event.request).catch(() => caches.match("/conexaocomunidade/offline.html")));
     return;
   }
-  if (["/icon-192.png", "/icon-512.png", "/offline.html", "/fundos-paginas.css", "/brand/fundo-offline-v2.webp"].includes(url.pathname))
+  if (["/conexaocomunidade/icon-192.png", "/conexaocomunidade/icon-512.png", "/conexaocomunidade/offline.html", "/conexaocomunidade/fundos-paginas.css", "/conexaocomunidade/brand/fundo-offline-v2.webp"].includes(url.pathname))
     event.respondWith(caches.match(event.request).then((r) => r || fetch(event.request)));
 });

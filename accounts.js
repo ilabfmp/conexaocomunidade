@@ -37,7 +37,9 @@ if (el("login")) {
       if (result.role === "coordination") {location.href = "/conexaocomunidade/coordenacao.html";return;}
       e.target.reset();
       location.href =
-        new URLSearchParams(location.search).get("next") === "app"
+        new URLSearchParams(location.search).get("next") === "report-form"
+          ? "/conexaocomunidade/relatar.html"
+          : new URLSearchParams(location.search).get("next") === "app"
           ? "/conexaocomunidade/comunidade.html?app=1&view=account"
           : new URLSearchParams(location.search).get("next") === "reports"
             ? "/conexaocomunidade/admin-relatos.html"
@@ -77,7 +79,7 @@ if (el("login")) {
               ? "Gerenciar empresas"
               : "Acessar minha empresa";
         if (coordinator) {el("session-continue").href = "/conexaocomunidade/coordenacao.html";el("session-continue").textContent = "Acompanhar projeto";}
-        if (d.user.auth === "local") {
+        if (d.user.auth === "local" && !d.user.shared) {
           el("change").hidden = false;
           el("password-panel").hidden = false;
           el("recovery-email-panel").hidden = false;
@@ -153,7 +155,8 @@ async function users() {
       el("reset").hidden = false;
       el("reset").scrollIntoView({ behavior: "smooth" });
     };
-    row.append(p, toggle, reset);
+    if (d.shared) { p.textContent = u.name + " · " + u.username + " · responsável (acesso compartilhado)"; row.append(p); }
+    else row.append(p, toggle, reset);
     el("users").append(row);
   }
 }
@@ -189,7 +192,7 @@ if (el("signup-company")) {
     e.preventDefault();
     action(form, async () => {
       const data = fields(form);
-      if (data.password !== data.confirmPassword) throw Error("As senhas precisam ser iguais.");
+      if (data.confirmPassword !== undefined && data.password !== data.confirmPassword) throw Error("As senhas precisam ser iguais.");
       await call("/api/auth", "POST", {
         action: "register-company",
         name: data.name,
@@ -253,7 +256,7 @@ if (el("recovery-reset")) {
     e.preventDefault();
     action(e.target, async () => {
       const data = fields(e.target);
-      if (data.password !== data.confirmPassword) throw Error("As senhas precisam ser iguais.");
+      if (data.confirmPassword !== undefined && data.password !== data.confirmPassword) throw Error("As senhas precisam ser iguais.");
       const d = await call("/api/password-recovery", "POST", {
         action: "reset",
         token,

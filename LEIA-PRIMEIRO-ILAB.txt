@@ -1,1 +1,7 @@
-Conexão Comunidade — preparação da publicação.
+CONEXÃO COMUNIDADE — PACOTE PARA O ILAB
+
+Extraia o conteúdo e envie arquivos e pastas à raiz do repositório conexaocomunidade. A página inicial é index.html. No GitHub, em Settings > Pages, escolha a branch main e a pasta / (root).
+
+A interface se comunica com a ponte já publicada; ela foi configurada para aceitar o endereço do ILAB e gravar no repositório ilabfmp/conexaocomunidade. O token está armazenado como segredo na ponte existente, não neste pacote. Assim esta instalação depende da continuidade do serviço da ponte.
+
+O pacote não inclui a chave de criptografia nem os JSONs de contas e relatos. Faça backup antes de substituir arquivos. Os fluxos completos de login, gravação e imagens devem ser testados após publicação. A organização em pastas por empresa ainda não está concluída.

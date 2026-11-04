@@ -1,0 +1,50 @@
+[
+  {
+    "id": "44290ee5-9bdf-4e5e-9c80-91ce3546545a",
+    "usuario": "admin",
+    "nome": "Administração ILAB",
+    "email": "",
+    "perfil": "owner",
+    "ativo": true,
+    "created_at": "2026-11-04T05:08:09.774Z",
+    "updated_at": "2026-11-04T05:08:09.775Z",
+    "senha": {
+      "algoritmo": "PBKDF2-SHA256",
+      "iteracoes": 310000,
+      "salt": "c1YfzXKp+nr8nVVghStGUQ==",
+      "hash": "Z9tpzcHYv2OC8DP4B1xZ8QoL3CXWXwz1CirSbsk+5Y0="
+    }
+  },
+  {
+    "id": "0f8c971f-7105-444b-8318-dc608222a256",
+    "usuario": "ilab",
+    "nome": "Equipe ILAB",
+    "email": "",
+    "perfil": "company-admin",
+    "ativo": true,
+    "created_at": "2026-11-04T05:08:09.867Z",
+    "updated_at": "2026-11-04T05:08:09.867Z",
+    "senha": {
+      "algoritmo": "PBKDF2-SHA256",
+      "iteracoes": 310000,
+      "salt": "8h4E22dYbl5M98DHPHGxJw==",
+      "hash": "IVyO95Dcugl9QGC4PIsDLIVOMpW6HHYeI5p3k+JDhic="
+    }
+  },
+  {
+    "id": "404ac198-6279-4d8b-bbac-8f75ffeca9da",
+    "usuario": "escola",
+    "nome": "Coordenação da Escola",
+    "email": "",
+    "perfil": "coordination",
+    "ativo": true,
+    "created_at": "2026-11-04T05:08:09.957Z",
+    "updated_at": "2026-11-04T05:08:09.957Z",
+    "senha": {
+      "algoritmo": "PBKDF2-SHA256",
+      "iteracoes": 310000,
+      "salt": "w/9RwDNR1AvuuNbXKwuBUg==",
+      "hash": "YsMeq5xEv03r1KcPmeIArIHfpo+VYJ8djHvG4zBieT8="
+    }
+  }
+]

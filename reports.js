@@ -1,6 +1,7 @@
 "use strict";
 const reportEl = (id) => document.getElementById(id);
 let reportBusy = false,
+  reportLoading = false,
   reportRows = [],
   reportLocation = null,
   reportLocating = false,
@@ -61,6 +62,8 @@ if (reportForm) {
   };
 }
 async function loadInbox() {
+  if(reportLoading)return;
+  reportLoading=true;
   try {
     const data = await reportCall();
     reportRows = data.reports;
@@ -133,7 +136,7 @@ async function loadInbox() {
           if (
             status === "Rejeitado" &&
             !confirm(
-              "Rejeitar este relato por conteúdo impróprio ou fora do contexto? Ele deixará de ser exibido como aprovado, mas continuará público no repositório.",
+              "Rejeitar este relato por conteúdo impróprio ou fora do contexto? Ele continuará restrito à administração.",
             )
           )
             return;
@@ -167,20 +170,21 @@ async function loadInbox() {
       list.append(card);
     }
   } catch (e) {
+    if(e.status===429||e.status===503){reportEl("inbox-error").textContent=e.message;return;}
     reportRows = [];
     reportEl("inbox-list").replaceChildren();
     reportEl("inbox-tools").hidden = true;
     reportEl("inbox-error").textContent = e.message;
     reportEl("inbox-summary").textContent = "Acesso reservado à administração.";
     reportEl("inbox-login").hidden = false;
-  }
+  } finally {reportLoading=false;}
 }
 if (reportEl("inbox-list")) {
   loadInbox();
   reportEl("inbox-refresh").onclick = () => loadInbox();
   setInterval(() => {
-    if (!reportBusy && document.visibilityState === "visible") loadInbox();
-  }, 30000);
+    if (!reportBusy && document.visibilityState === "visible" && !(window.ConexaoGithubStatus?.blockedUntil > Date.now())) loadInbox();
+  }, 60000);
   reportEl("inbox-export").onclick = () => {
     const a = document.createElement("a"),
       url = URL.createObjectURL(
@@ -190,7 +194,7 @@ if (reportEl("inbox-list")) {
         ),
       );
     a.href = url;
-    a.download = "Relatos-Comunidade.json";
+    a.download = "Relatos-Comunidade.private.json";
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
@@ -316,14 +320,3 @@ if (reportEl("report-photos"))
     reportEl("report-photo-count").textContent =
       reportEl("report-photos").files.length + " foto(s) selecionada(s). Até 3 por relato.";
   };
-
-// Shared editing access: explain the requirement before the visitor fills a report.
-if (reportForm) {
-  reportForm.inert = true;
-  fetch('/api/auth').then(readApiResponse).then(data => {
-    if (data.user) {reportForm.inert = false;return;}
-    const box = reportEl('report-status');box.hidden = false;
-    box.textContent = 'Para enviar, entre com a senha compartilhada dos responsáveis. ';
-    const link = document.createElement('a');link.href = '/conexaocomunidade/entrar.html?next=report-form';link.textContent = 'Entrar para registrar relato';box.append(link);
-  }).catch(error => {const box = reportEl('report-status');box.hidden = false;box.textContent = error.message;});
-}

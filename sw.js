@@ -1,4 +1,4 @@
-const CACHE = "conexao-original-github-v1";
+const CACHE = "conexao-static-v79-marca-cartaz";
 self.addEventListener("install", (event) =>
   event.waitUntil(
     caches.open(CACHE).then((c) => c.addAll(["/conexaocomunidade/offline.html", "/conexaocomunidade/icon-192.png", "/conexaocomunidade/icon-512.png", "/conexaocomunidade/fundos-paginas.css", "/conexaocomunidade/brand/fundo-offline-v2.webp"])),

@@ -45,9 +45,9 @@ function distance(r) {
 function matches(r, q) {
   const t = norm([r.title, r.name, r.category, r.products, r.address].join(" "));
   return norm(q)
-    .split(/\s+/)
+    .split(/[^a-z0-9]+/)
     .filter(Boolean)
-    .every((w) => t.includes(w));
+    .every((w) => t.split(/[^a-z0-9]+/).some((word) => word.startsWith(w)));
 }
 function matchesPointType(r) {
   const selected = e("point-filter").value;
@@ -121,7 +121,7 @@ function renderAccount() {
   const root = e("account");
   root.replaceChildren();
   if (!user) {
-    text("p", "Pesquise sem criar conta. Para registrar relatos, entre com a senha compartilhada dos responsáveis.", root);
+    text("p", "Pesquise e envie relatos sem criar conta.", root);
     link(root, "Entrar na conta", "/conexaocomunidade/entrar.html?next=app");
     link(root, "Cadastrar empresa", "/conexaocomunidade/cadastro.html");
     return;
@@ -133,13 +133,12 @@ function renderAccount() {
   actions.className = "actions";
   if (admin) {
     link(actions, "Registros de atividade", "/conexaocomunidade/admin-logs.html");
-    link(actions, "Coordenação", "/conexaocomunidade/coordenacao.html");
-    link(actions, "Responsáveis", "/conexaocomunidade/contas.html");
+    link(actions, "Gerenciar contas", "/conexaocomunidade/contas.html");
     link(actions, "Aprovar e gerenciar imagens", "/conexaocomunidade/admin-imagens.html");
     link(actions, "Ler relatos da comunidade", "/conexaocomunidade/admin-relatos.html");
     link(actions, "Gerenciar empresas", "/conexaocomunidade/teste.html?area=business");
   } else link(actions, "Minha empresa e fotos", "/conexaocomunidade/teste.html?area=business");
-  link(actions, "Perfil e sair", "/conexaocomunidade/entrar.html");
+  link(actions, "Perfil, senha e sair", "/conexaocomunidade/entrar.html");
 }
 function show(r) {
   selected = r;
@@ -267,9 +266,9 @@ function render() {
   if (currentTab === "map") initMap();
   const points = list.filter((r) => Number.isFinite(r.lat) && Number.isFinite(r.lng));
   drawMapPoints();
-  e("results-count").textContent = list.length;
-  e("map-info").textContent =
-    list.length + " locais encontrados · " + points.length + " pontos no mapa.";
+  e("results-count").textContent = loaded ? list.length : "…";
+  e("map-info").textContent = !loaded ? "Carregando locais…" :
+    list.length + (list.length === 1 ? " local encontrado · " : " locais encontrados · ") + points.length + (points.length === 1 ? " ponto no mapa." : " pontos no mapa.");
   if (map && currentTab === "map" && points.length && !selected && !origin && loaded && !mapFitted) {
     mapFitted = true;
     map.fitBounds(L.latLngBounds(points.map((r) => [r.lat, r.lng])), {
@@ -388,7 +387,7 @@ async function load() {
     records = d.records;
     user = d.user;
     loaded = true;
-    status("");
+    status(d.sync?.message || "");
     render();
     renderAccount();
   } catch (err) {
@@ -470,6 +469,6 @@ if (
 tab(new URLSearchParams(location.search).get("view") || (appMode ? "home" : "map"));
 load();
 setInterval(() => {
-  if (!document.hidden && !e("place-details").open) load();
-}, 30000);
+  if (!document.hidden && !e("place-details").open && !(window.ConexaoGithubStatus?.blockedUntil > Date.now())) load();
+}, 60000);
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/conexaocomunidade/sw.js").catch(() => {});

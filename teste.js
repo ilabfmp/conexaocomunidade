@@ -6,6 +6,8 @@ const connected =
   location.hostname === "127.0.0.1";
 let suggestionOpen = false;
 let catalogueLimit = 24;
+let catalogueLoaded = false;
+let syncWarning = false;
 let companyAccess = false;
 let adminAccess = false;
 let companies = [],
@@ -38,6 +40,7 @@ const normalize = (s) =>
     .replace(/\bpaes\b/g, "pao")
     .replace(/\bcostureir[ao]s?\b/g, "costura");
 function tell(text, error = false) {
+  syncWarning = false;
   $("message").textContent = text;
   $("message").classList.toggle("error", error);
 }
@@ -62,7 +65,7 @@ document
   .querySelectorAll("[data-view]")
   .forEach((b) => b.addEventListener("click", () => switchView(b.dataset.view)));
 async function api(path, method = "GET", data) {
-  if (!connected) throw Error("Abra a versão conectada para salvar os cadastros.");
+  if (!connected) throw Error("Abra a versão conectada para salvar com proteção no servidor.");
   const options = { method, cache: "no-store" };
   if (data !== undefined) {
     options.headers = { "Content-Type": "application/json" };
@@ -93,6 +96,11 @@ function directoryInfo(data) {
   $("directory-info").textContent = data.directory?.count
     ? `${data.directory.count} registros do levantamento de ${data.directory.sourceDate}. Fonte: Mapa do Empreendedor/ICOM. Estes negócios ainda não têm contas confirmadas no projeto.`
     : "";
+  if(data.addressReferences){
+    const credit=document.createElement('a');
+    credit.href='https://www.openstreetmap.org/copyright';credit.target='_blank';credit.rel='noopener noreferrer';credit.textContent='© OpenStreetMap contributors';
+    $("directory-info").append(document.createTextNode(' Ruas de referência aproximadas: '),credit,document.createTextNode('. Confirme o imóvel com o responsável.'));
+  }
   const selectedSector = $("sector-filter").value;
   $("sector-filter").innerHTML =
     '<option value="">Todos os setores</option>' +
@@ -106,7 +114,7 @@ function directoryInfo(data) {
   $("complementary-list").innerHTML = extra
     .map(
       (c) =>
-        `<article><h3>${escape(c.name)}</h3><p>${escape(c.address)}</p><p>${escape(c.contact)}</p><p>${escape(c.notes)}</p><a href="${escape(c.source)}" target="_blank" rel="noreferrer">Consultar fonte</a></article>`,
+        `<article><h3>${escape(c.name)}</h3><p>${escape(c.address?.trim() || "Endereço não informado.")}</p><p>${escape(c.contact)}</p><p>${escape(c.notes)}</p><a href="${escape(c.source)}" target="_blank" rel="noreferrer">Consultar fonte</a></article>`,
     )
     .join("");
 }
@@ -136,7 +144,7 @@ function distance(c) {
         : d.toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + " km") + " em linha reta";
 }
 function filtered() {
-  const terms = normalize($("search").value).trim().split(/\s+/);
+  const terms = normalize($("search").value).split(/[^a-z0-9]+/).filter(Boolean);
   const list = companies.filter(
     (c) =>
       c.published !== false &&
@@ -153,12 +161,20 @@ function filtered() {
             c.description,
             c.address,
           ].join(" "),
-        ).includes(t),
+        ).split(/[^a-z0-9]+/).some((word) => word.startsWith(t)),
       ),
   );
   return origin ? list.sort((a, b) => (km(a) ?? Infinity) - (km(b) ?? Infinity)) : list;
 }
 function renderCatalogue() {
+  if (!catalogueLoaded && loading) {
+    $("count").textContent = "Carregando locais…";
+    $("empty").hidden = true;
+    $("more-companies").hidden = true;
+    $("search-suggestions").hidden = true;
+    $("search").setAttribute("aria-expanded", "false");
+    return;
+  }
   suggestions();
   const list = filtered();
   $("more-companies").hidden = list.length <= catalogueLimit;
@@ -280,9 +296,9 @@ $("replace-file").onchange = (e) => {
   e.target.value = "";
   if (file && target) upload(file, target.kind, target.id);
 };
-function editCompany(c, creating = false) {
-  form.hidden = adminAccess && !c && !creating;
-  document.querySelector(".business-layout").classList.toggle("admin-list-only", adminAccess && !c && !creating);
+function editCompany(c) {
+  form.hidden = adminAccess && !c;
+  document.querySelector(".business-layout").classList.toggle("admin-list-only", adminAccess && !c);
   companyId = c?.id || null;
   companyRevision = c?.revision || null;
   logo = c?.logo || null;
@@ -323,9 +339,15 @@ async function load() {
   loading = true;
   try {
     const data = await api("/api/companies");
+    if(data.sync?.stale && catalogueLoaded && currentView !== "client") {tell(data.sync.message,true);return false;}
+    if(data.sync?.stale){tell(data.sync.message,true);syncWarning=true;}else if(syncWarning)tell("");
+    for(const id of ["business-entry","business-login"]) {
+      const link=$(id);if(!link)continue;
+      if(data.accountVerified===false)link.setAttribute("aria-disabled","true");else link.removeAttribute("aria-disabled");
+    }
     accessRequired = false;
     adminAccess = ["owner", "company-admin"].includes(data.user?.role);
-    $("new-company").hidden = false;
+    $("new-company").hidden = adminAccess;
     const panelHeading = $("business-panel").querySelector(".page-heading");
     panelHeading.querySelector(".eyebrow").textContent = adminAccess
       ? "ADMINISTRAÇÃO"
@@ -355,6 +377,7 @@ async function load() {
       : "Cadastrar minha empresa";
     $("access-notice").hidden = true;
     companies = data.companies;
+    catalogueLoaded = true;
     if (["owner", "company-admin"].includes(data.user?.role)) showAdminNotice();
     directoryInfo(data);
     renderCatalogue();
@@ -376,7 +399,7 @@ async function load() {
       : data.user.role === "coordination" ? "Coordenação · escola" : "Empresa · conectada";
     $("signin").textContent = "Sair";
     $("signin").href =
-      data.user.auth === "local" ? "/conexaocomunidade/entrar.html" : "/signout-with-chatgpt?return_to=%2Fteste.html";
+      data.user.auth === "local" ? "/conexaocomunidade/entrar.html" : "/conexaocomunidade/entrar.html";
     $("signin").onclick =
       data.user.auth === "local"
         ? async (e) => {
@@ -397,7 +420,7 @@ async function load() {
 }
 async function ensureCompany() {
   if (companyId) return companyId;
-
+  if (adminAccess) throw Error("Selecione uma empresa registrada para gerenciar.");
   const created = await api("/api/companies", "POST", { action: "create" });
   companyId = created.id;
   companyRevision = created.revision;
@@ -460,7 +483,7 @@ form.addEventListener("submit", async (e) => {
     media();
     setBusy(true);
     dirty = false;
-    tell("Empresa salva. Os dados são públicos; a atualização do catálogo pode levar alguns instantes.");
+    tell("Empresa salva. Seus dados foram armazenados com criptografia.");
     await load();
   } catch (e) {
     tell(e.message, true);
@@ -469,10 +492,10 @@ form.addEventListener("submit", async (e) => {
   }
 });
 $("new-company").onclick = () => {
-
+  if (adminAccess) return;
   if (busy) return;
   if (dirty && !confirm("Descartar os campos ainda não salvos?")) return;
-  editCompany(null, true);
+  editCompany(null);
 };
 async function upload(file, kind, replace = null) {
   if (!file || busy) return;
@@ -559,11 +582,11 @@ $("export-company").onclick = () => {
   );
   const a = document.createElement("a");
   a.href = url;
-  a.download = "dados-da-minha-empresa.json";
+  a.download = "dados-da-minha-empresa.private.json";
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
   tell(
-    "Exportação feita. O arquivo contém dados legíveis, incluindo a observação adicional. Imagens são referências, sem os arquivos.",
+    "Exportação feita. O arquivo contém dados legíveis, incluindo a observação privada. Imagens são referências, sem os arquivos.",
   );
 };
 function geo(success) {
@@ -609,7 +632,7 @@ $("search").oninput = () => {
 };
 function routeUrl(c, mode = "driving") {
   const destination = c.lat != null && c.lng != null ? c.lat + "," + c.lng : c.address;
-  if (!destination) return null;
+  if (!destination || /^Rua e número não publicados(?:,|$)/i.test(String(destination).trim()) || /^Endereço não informado[.!]?$/i.test(String(destination).trim())) return null;
   const params = new URLSearchParams({ api: "1", destination, travelmode: mode });
   if (origin) params.set("origin", origin.lat + "," + origin.lng);
   return "https://www.google.com/maps/dir/?" + params;
@@ -618,7 +641,7 @@ function showDetails(c) {
   if (!c) return;
   const point =
     c.lat != null && c.lng != null
-      ? `<iframe class="map" title="Localização de ${escape(c.name)}" src="https://www.openstreetmap.org/export/embed.html?bbox=${[Math.max(-180, c.lng - 0.012), Math.max(-90, c.lat - 0.008), Math.min(180, c.lng + 0.012), Math.min(90, c.lat + 0.008)].join("%2C")}&amp;layer=mapnik&amp;marker=${c.lat}%2C${c.lng}"></iframe>`
+      ? `<iframe class="map" loading="lazy" title="Localização de ${escape(c.name)}" src="/conexaocomunidade/localizacao.html?lat=${encodeURIComponent(c.lat)}&amp;lng=${encodeURIComponent(c.lng)}"></iframe>`
       : "";
   const route = routeUrl(c);
   const phone = String(c.contact || "").replace(/[^0-9+]/g, "");
@@ -626,7 +649,7 @@ function showDetails(c) {
     ? `<div class="service-table-wrap"><table class="service-table"><caption>Serviços e produtos</caption><thead><tr><th scope="col">O que oferece</th><th scope="col">Referência</th></tr></thead><tbody>${c.services.map((s) => `<tr><td>${escape(s.name)}</td><td>${escape(s.unit)}</td></tr>`).join("")}</tbody></table></div>`
     : "";
   $("details-content").innerHTML =
-    `<article class="detail">${c.facade ? `<img class="storefront-photo" src="${escape(img(c.facade))}" alt="Fachada de ${escape(c.name)}">` : ""}${c.logo ? `<img class="detail-logo" src="${escape(img(c.logo))}" alt="Logo enviada pela empresa">` : ""}<h2>${escape(c.name)}</h2>${c.sourceType === "survey" ? `<p class="notice">Levantamento público de ${escape(c.sourceDate)}. Ainda não confirmado pelo responsável neste projeto.</p><p>Bairro: ${escape(c.district)}</p><p>Atendimento: ${escape(c.attendance)}</p><p>${escape(c.notes)}</p><a href="${escape(c.source)}" target="_blank" rel="noreferrer">Consultar fonte do levantamento</a>` : ""}<p>${escape(c.category)}</p>${c.provider ? `<p>Responsável: ${escape(c.provider)}</p>` : ""}<p>${escape(c.slogan)}</p><p>${escape(c.description)}</p><h3>O que vende ou oferece</h3><p>${escape(c.products || "")}</p>${servicesTable}<h3>Endereço</h3><p class="card-address">${escape(c.address?.trim() || "Endereço não informado.")}</p>${c.hours ? `<p>Horário: ${escape(c.hours)}</p>` : ""}${c.contact ? `<p>Telefone: ${escape(c.contact)}</p>${/^\+?[0-9]{8,15}$/.test(phone) ? `<a class="secondary" href="tel:${phone}">Ligar para o comércio</a>` : ""}` : ""}${origin ? `<p class="distance">${escape(distance(c))}</p>` : ""}<h3>Como chegar</h3><route-guide data-title="${escape(c.name)}" data-address="${escape(c.address)}" data-lat="${c.lat ?? ""}" data-lng="${c.lng ?? ""}"></route-guide>${route ? `<label>Como você vai?<select id="route-mode"><option value="driving">Carro</option><option value="walking">A pé</option><option value="bicycling">Bicicleta</option><option value="transit">Transporte público</option></select></label><a id="google-route" class="primary route-link" href="${escape(route)}" target="_blank" rel="noopener noreferrer">Abrir rota no Google Maps</a><p class="footnote">O Google Maps mostra o trajeto, a distância pelas ruas e a estimativa de tempo disponíveis. Ao abrir a rota, o destino e, se informada, sua localização serão enviados ao Google. Confira se o destino corresponde ao comércio.</p>` : "<p>O comércio ainda não informou endereço ou coordenadas.</p>"}${point}<h3>Fotos do comércio</h3><div class="detail-gallery">${(c.gallery || []).map((id) => `<img src="${escape(img(id))}" alt="Foto enviada pela empresa">`).join("")}</div></article>`;
+    `<article class="detail">${c.facade ? `<img class="storefront-photo" src="${escape(img(c.facade))}" alt="Fachada de ${escape(c.name)}">` : ""}${c.logo ? `<img class="detail-logo" src="${escape(img(c.logo))}" alt="Logo enviada pela empresa">` : ""}<h2>${escape(c.name)}</h2>${c.sourceType === "survey" ? `<p class="notice">Levantamento público de ${escape(c.sourceDate)}. Ainda não confirmado pelo responsável neste projeto.</p><p>Bairro: ${escape(c.district)}</p><p>Atendimento: ${escape(c.attendance)}</p><p>${escape(c.notes)}</p><a href="${escape(c.source)}" target="_blank" rel="noreferrer">Consultar fonte do levantamento</a>` : ""}<p>${escape(c.category)}</p>${c.provider ? `<p>Responsável: ${escape(c.provider)}</p>` : ""}<p>${escape(c.slogan)}</p><p>${escape(c.description)}</p><h3>O que vende ou oferece</h3><p>${escape(c.products?.trim() || c.category?.trim() || "Produtos e serviços ainda não informados.")}</p>${servicesTable}<h3>Endereço</h3><p class="card-address">${escape(c.address?.trim() || "Endereço não informado.")}</p>${c.hours ? `<p>Horário: ${escape(c.hours)}</p>` : ""}${c.contact ? `<p>Telefone: ${escape(c.contact)}</p>${/^\+?[0-9]{8,15}$/.test(phone) ? `<a class="secondary" href="tel:${phone}">Ligar para o comércio</a>` : ""}` : ""}${origin ? `<p class="distance">${escape(distance(c))}</p>` : ""}<h3>Como chegar</h3><route-guide data-title="${escape(c.name)}" data-address="${escape(c.address?.trim() || "Endereço não informado.")}" data-lat="${c.lat ?? ""}" data-lng="${c.lng ?? ""}"></route-guide>${route ? `<label>Como você vai?<select id="route-mode"><option value="driving">Carro</option><option value="walking">A pé</option><option value="bicycling">Bicicleta</option><option value="transit">Transporte público</option></select></label><a id="google-route" class="primary route-link" href="${escape(route)}" target="_blank" rel="noopener noreferrer">Abrir rota no Google Maps</a><p class="footnote">O Google Maps mostra o trajeto, a distância pelas ruas e a estimativa de tempo disponíveis. Ao abrir a rota, o destino e, se informada, sua localização serão enviados ao Google. Confira se o destino corresponde ao comércio.</p>` : "<p>O comércio ainda não informou endereço ou coordenadas.</p>"}${point}<h3>Fotos do comércio</h3><div class="detail-gallery">${(c.gallery || []).length ? c.gallery.map((id) => `<img src="${escape(img(id))}" alt="Foto enviada pela empresa">`).join("") : `<p>${c.facade ? "Nenhuma foto adicional publicada." : "Este local ainda não publicou fotos."}</p>`}</div></article>`;
   if ($("route-mode"))
     $("route-mode").onchange = (e) => {
       $("google-route").href = routeUrl(c, e.target.value);
@@ -746,7 +769,7 @@ window.addEventListener("beforeunload", (e) => {
   e.preventDefault();
   e.returnValue = "";
 });
-$("offline").hidden = connected;
+if ($("offline")) $("offline").hidden = connected;
 const requestedView = new URLSearchParams(location.search).get("area");
 switchView(requestedView === "business-panel" ? "business" : requestedView || "client");
 if (connected) {
@@ -760,9 +783,9 @@ if (connected) {
     }
   });
   setInterval(() => {
-    if (document.visibilityState === "visible" && currentView === "client" && !accessRequired)
+    if (document.visibilityState === "visible" && !busy && !loading && !dirty && !accessRequired && !(window.ConexaoGithubStatus?.blockedUntil > Date.now()))
       load();
-  }, 20000);
+  }, 60000);
 } else renderCatalogue();
 
 let installPrompt = null,
@@ -775,7 +798,7 @@ $("install-app").onclick = () => {
   const d = document.createElement("dialog");
   d.className = "panel";
   d.innerHTML =
-    '<div class="android-install"><h2>Instalar aplicativo</h2><a href="/conexaocomunidade/comunidade.html?app=1">Abrir versão para celular</a><small>Use a instalação pelo navegador para acessar esta versão independente. O APK antigo não foi atualizado.</small><button class="primary pwa" type="button" hidden>Instalar pelo navegador</button><p>Também é possível instalar pelo menu do navegador. No iPhone, use Safari → Compartilhar → Adicionar à Tela de Início.</p><button type="button" class="secondary close-install">Fechar</button></div>';
+    '<div class="android-install"><h2>Instalar aplicativo</h2><a href="/conexaocomunidade/downloads/comunidade-conectada-teste.apk">Baixar APK de testes para Android</a><small>Android 6.0 ou superior, com Android System WebView atualizado. O aplicativo usa os mesmos dados do site e precisa de internet. Para instalar o APK de testes, o Android pode solicitar autorização para instalar por este navegador.</small><button class="primary pwa" type="button" hidden>Instalar pelo navegador</button><p>Também é possível instalar pelo menu do navegador. No iPhone, use Safari → Compartilhar → Adicionar à Tela de Início.</p><button type="button" class="secondary close-install">Fechar</button></div>';
   const pwa = d.querySelector(".pwa");
   pwa.hidden = !installPrompt;
   pwa.onclick = async () => {
@@ -833,3 +856,6 @@ async function showAdminNotice() {
       data.unread + " novo(s) relato(s) da comunidade. Abra a caixa de relatos para verificar.";
   } catch (e) {}
 }
+
+// A failed account check must not offer a second registration while the session is unknown.
+document.addEventListener("click", event => {if(event.target.closest?.('a[aria-disabled="true"]'))event.preventDefault();},true);

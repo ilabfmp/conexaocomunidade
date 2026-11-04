@@ -8,7 +8,7 @@
     <link rel="icon" href="/conexaocomunidade/favicon.svg" />
     <link rel="stylesheet" href="/conexaocomunidade/fundos-paginas.css" />
   <link rel="stylesheet" href="/conexaocomunidade/brand-name.css" />
-<script src="/conexaocomunidade/brand-name.js?v=restauracao-1" defer></script>
+<script src="/conexaocomunidade/brand-name.js" defer></script>
 </head>
   <body data-background-view="acesso">
     <header>
@@ -51,14 +51,22 @@
           ><a id="session-logs" class="secondary" href="/conexaocomunidade/admin-logs.html" hidden
             >Registros de atividade</a
           ><a id="session-accounts" class="secondary" href="/conexaocomunidade/contas.html" hidden
-            >Responsáveis</a
+            >Administrar contas</a
           ><a id="session-reports" class="secondary" href="/conexaocomunidade/admin-relatos.html" hidden
             >Relatos da comunidade</a
-          ><a class="secondary" href="/conexaocomunidade/coordenacao.html">Coordenação</a><button id="session-logout" class="secondary" type="button">Sair da conta</button>
+          ><button id="session-logout" class="secondary" type="button">Sair da conta</button>
         </div>
         <p id="admin-access-summary" hidden>
-          Acesso compartilhado: empresas, imagens, relatos e identificação dos responsáveis. Os dados salvos são públicos no repositório.
+          ADM · acesso completo: empresas, imagens, relatos e contas. Os relatos são exclusivos da
+          administração.
         </p>
+        <section id="admin-integration" hidden aria-label="Conexão com o GitHub">
+          <h3>Conexão com o GitHub</h3>
+          <p>Token: <code>********</code></p>
+          <button id="verify-integration" class="secondary" type="button">Verificar conexão</button>
+          <p id="integration-status" role="status" aria-live="polite">A conferência mostra o repositório e a identificação do token, sem exibir seu conteúdo.</p>
+          <p class="footnote">A máscara e a criptografia do arquivo evitam a leitura direta. Como a conexão funciona no navegador, o token ainda pode ser recuperado tecnicamente.</p>
+        </section>
       </section>
       <form id="login" class="panel">
         <label
@@ -71,13 +79,13 @@
             autocapitalize="none"
             spellcheck="false" /></label
         ><label
-          >Senha compartilhada<input
+          >Senha<input
             name="password"
             type="password"
             required
             maxlength="128"
             autocomplete="current-password" /></label
-        ><small>A sessão continua nesta aba por até 30 minutos sem atividade. Use a senha compartilhada dos responsáveis.</small><button class="primary">Entrar</button>
+        ><label class="checkbox remember-login"><input type="checkbox" name="remember" value="true" /> Manter conectado por 30 dias</label><small>Use esta opção em um dispositivo seu.</small><button class="primary">Entrar</button>
         <p class="footnote"><a href="/conexaocomunidade/recuperar.html">Esqueci minha senha</a></p>
       </form>
       <details id="password-panel" class="session-password" hidden>
@@ -129,7 +137,7 @@
         </form>
       </details>
       <div id="login-options">
-        <p><a href="/conexaocomunidade/cadastro.html">Identificar responsável e cadastrar empresa</a></p>
+        <p><a href="/conexaocomunidade/cadastro.html">Criar uma conta de empresa</a></p>
       </div>
     </main>
     <footer class="project-footer">
@@ -156,9 +164,9 @@
         </div>
       </div>
     </footer>
-    <script src="/conexaocomunidade/pages-bridge.js?v=restauracao-1"></script>
-    <script src="/conexaocomunidade/api-response.js?v=restauracao-1"></script>
-    <script src="/conexaocomunidade/accounts.js?v=restauracao-1"></script>
-    <script src="/conexaocomunidade/app-mode.js?v=restauracao-1"></script>
+    <script src="/conexaocomunidade/pages-independent.js"></script>
+    <script src="/conexaocomunidade/api-response.js"></script>
+    <script src="/conexaocomunidade/accounts.js"></script>
+    <script src="/conexaocomunidade/app-mode.js"></script>
   </body>
 </html>

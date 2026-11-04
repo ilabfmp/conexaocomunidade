@@ -1,0 +1,26 @@
+name: Verificar instalação HTML
+on:
+  workflow_call:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pages:
+    name: Pages (${{ matrix.browser }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright-core install --with-deps ${{ matrix.browser }}
+      - name: Conferir fluxos com dados sintéticos
+        env:
+          PAGES_BROWSERS: ${{ matrix.browser }}
+        run: npm run test:pages

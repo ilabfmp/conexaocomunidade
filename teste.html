@@ -13,7 +13,7 @@
     <meta name="theme-color" content="#126654" />
     <meta
       name="description"
-      content="Demonstração pública do Conexão Comunidade para empresas e clientes"
+      content="Demonstração privada do Conexão Comunidade para empresas e clientes"
     />
     <title>Conexão Comunidade • Empresas e clientes</title>
     <link rel="manifest" href="manifest.webmanifest" />
@@ -22,7 +22,7 @@
     <link rel="stylesheet" href="/conexaocomunidade/fundos-paginas.css" />
     <link rel="stylesheet" href="/conexaocomunidade/mobile-home.css" />
   <link rel="stylesheet" href="/conexaocomunidade/brand-name.css" />
-<script src="/conexaocomunidade/brand-name.js?v=restauracao-1" defer></script>
+<script src="/conexaocomunidade/brand-name.js" defer></script>
 </head>
   <body data-background-view="cliente">
     <header>
@@ -51,12 +51,11 @@
           ><b id="profile-name"></b><small id="profile-role"></small
           ><small>Abrir meu perfil</small></span
         ></a
-      ><span class="test-badge">VERSÃO DE TESTES</span
       ><button id="install-app" class="secondary">
         <img src="/conexaocomunidade/brand/android.svg" alt="" width="24" height="24" />Instalar app</button
       ><a id="signin" href="/conexaocomunidade/entrar.html">Entrar</a>
     </header>
-    <div id="offline" class="notice" hidden>Abra este site com conexão à internet para consultar e salvar os cadastros.</div>
+    
     <nav aria-label="Áreas do aplicativo">
       <button data-view="client" class="active">Sou cliente</button
       ><button data-view="business">Sou empresa</button
@@ -98,7 +97,7 @@
         <div class="search-info">
           <span id="location-status">Informe sua localização para ordenar por proximidade.</span
           ><button id="clear-location" hidden>Limpar localização</button
-          ><span id="count">0 empresas</span>
+          ><span id="count" role="status">Carregando locais…</span>
         </div>
         <div class="directory-filters">
           <label
@@ -124,7 +123,7 @@
         </details>
         <div id="catalogue" class="cards"></div>
         <button id="more-companies" class="secondary" hidden>Mostrar mais negócios</button>
-        <div id="empty" class="empty">
+        <div id="empty" class="empty" hidden>
           <div class="empty-symbol">+</div>
           <h2>O catálogo começa com as empresas.</h2>
           <p>
@@ -135,19 +134,20 @@
         </div>
         <p class="footnote">
           As distâncias são aproximadas em linha reta. O catálogo inclui somente empresas que
-          disponibilizaram seus dados nesta demonstração pública.
+          disponibilizaram seus dados nesta demonstração privada.
         </p>
       </section>
       <section id="business" class="view" hidden>
         <div class="page-heading">
           <p class="eyebrow">SOU EMPRESA</p>
           <h1>Seu negócio na comunidade.</h1>
-          <p>Identifique-se e entre com a senha compartilhada para cadastrar e gerenciar empresas.</p>
+          <p>Crie sua conta ou entre para cadastrar e gerenciar sua empresa.</p>
         </div>
         <article class="panel">
           <h2>Cadastre seu negócio ou serviço</h2>
           <p>
-            Primeiro, identifique-se com a senha dos responsáveis. Depois, adicione as informações e as fotos do seu negócio.
+            Primeiro, faça seu cadastro no sistema. Depois, adicione as informações e as fotos do
+            seu negócio.
           </p>
           <a id="business-entry" class="primary" href="/conexaocomunidade/cadastro.html">Cadastrar minha empresa</a>
           <p><a href="/conexaocomunidade/entrar.html?next=business">Já tenho conta: entrar</a></p>
@@ -165,7 +165,8 @@
             <div id="owned"></div>
             <button id="new-company" class="secondary">Cadastrar outra empresa</button>
             <p class="footnote">
-              Todos os responsáveis com a senha compartilhada podem gerenciar os cadastros.
+              A opção “Minha empresa” abre esta área. Ela não concede acesso aos cadastros de outras
+              contas.
             </p>
           </aside>
           <form id="company-form" class="panel">
@@ -309,7 +310,8 @@
               /></label>
               <div id="gallery-preview" class="gallery"></div>
               <p class="footnote">
-                JPG, PNG ou WebP, até 5 MB por imagem. As fotos dos responsáveis são aprovadas ao salvar; a administração pode revisar sua exibição no catálogo. Alterações nas fotos são salvas
+                JPG, PNG ou WebP, até 5 MB por imagem. As fotos ficam aguardando aprovação da
+                administração antes de aparecer no site. Alterações nas fotos são salvas
                 imediatamente. Os outros campos continuam sendo salvos no botão Salvar empresa.
               </p>
             </section>
@@ -317,7 +319,7 @@
               Salve o cadastro para liberar a foto da fachada e as imagens adicionais.
             </p>
             <label class="private-note"
-              >Observação adicional <small>pública no repositório</small
+              >Observação privada <small>visível apenas na conta responsável</small
               ><textarea
                 name="privateNote"
                 maxlength="1000"
@@ -327,11 +329,11 @@
             ><label class="checkbox"
               ><input name="published" type="checkbox" /><span
                 >Disponibilizar os dados comerciais e as imagens no catálogo desta demonstração
-                pública.</span
+                privada.</span
               ></label
             >
             <p class="footnote">
-              Todos os dados salvos são públicos no repositório, inclusive rascunhos e observações. Envie somente informações e imagens autorizadas.
+              Envie somente informações que pode divulgar e imagens cujo uso foi autorizado.
             </p>
             <div class="actions">
               <button id="save-company" class="primary" type="submit">Salvar empresa</button
@@ -529,11 +531,11 @@
           <h2>Equipe do projeto</h2>
           <div
             data-photo-slot="team"
-            class="team-photo-slot"
+            class="team-photo-slot team-photo-cropped"
             role="img"
-            aria-label="Espaço reservado para uma foto de toda a equipe"
+            aria-label="Equipe do projeto Conexão Comunidade"
           >
-            <span>Foto de toda a equipe</span>
+            <img src="/conexaocomunidade/brand/equipe-projeto-20261029.jpg" alt="Integrantes da equipe do projeto Conexão Comunidade reunidos na apresentação" loading="lazy" width="1536" height="1152">
           </div>
         </section>
       </section>
@@ -566,12 +568,13 @@
       <button class="close" aria-label="Fechar detalhes">×</button>
       <div id="details-content"></div>
     </dialog>
-    <script src="/conexaocomunidade/pages-bridge.js?v=restauracao-1"></script>
-    <script src="/conexaocomunidade/api-response.js?v=restauracao-1"></script>
-    <script src="/conexaocomunidade/route-guide.js?v=restauracao-1"></script>
-    <script src="/conexaocomunidade/about-fotos.js?v=restauracao-1"></script>
-    <script src="/conexaocomunidade/activity-icons.js?v=restauracao-1"></script>
+    <script src="/conexaocomunidade/pages-independent.js"></script>
+    <script src="/conexaocomunidade/api-response.js"></script>
+    <script src="/conexaocomunidade/route-guide.js"></script>
+    <script src="/conexaocomunidade/about-fotos.js"></script>
+    <script src="/conexaocomunidade/activity-icons.js"></script>
     <script src="teste.js"></script>
-    <script src="/conexaocomunidade/app-mode.js?v=restauracao-1"></script>
+    <script src="/conexaocomunidade/app-mode.js"></script>
   </body>
 </html>
+

@@ -8,10 +8,10 @@
     <link rel="icon" href="/conexaocomunidade/favicon.svg">
     <link rel="stylesheet" href="/conexaocomunidade/fundos-paginas.css" />
   <link rel="stylesheet" href="/conexaocomunidade/brand-name.css" />
-<script src="/conexaocomunidade/brand-name.js?v=restauracao-1" defer></script>
+<script src="/conexaocomunidade/brand-name.js" defer></script>
 </head>
   <body data-background-view="coordenacao">
-    <header><a class="brand" href="/conexaocomunidade/teste.html">Conexão Comunidade</a><a href="/conexaocomunidade/entrar.html">← Voltar ao perfil</a></header>
+    <header><a class="brand" href="/conexaocomunidade/teste.html"><img class="brand-mark" src="/conexaocomunidade/favicon.svg" alt="" width="42" height="42" />Conexão Comunidade</a><a href="/conexaocomunidade/entrar.html">← Voltar ao perfil</a></header>
     <main>
       <div class="page-heading"><p class="eyebrow">ESCOLA · COORDENAÇÃO</p><h1>Acompanhar o projeto</h1><p>Edite os dados básicos dos cadastros e acompanhe, aprove ou rejeite relatos.</p></div>
       <p id="coordination-status" role="status">Verificando acesso…</p>
@@ -22,7 +22,7 @@
       </div>
       <section class="panel" id="coord-informal" hidden>
         <h2>Cadastro de empreendedor informal</h2>
-        <p>Não exige CNPJ. A equipe registra a atividade usando seu acesso compartilhado.</p>
+        <p>Não exige CNPJ. Primeiro a escola registra a atividade; depois pode criar e liberar a conta do empreendedor pela lista de cadastros.</p>
         <form id="informal-form" class="form-grid">
           <label>Nome do negócio ou serviço<input name="name" required minlength="2" maxlength="120"></label>
           <label>Nome do responsável que será divulgado<input name="provider" required minlength="2" maxlength="100"></label>
@@ -35,15 +35,15 @@
           <label>Descrição<textarea name="description" maxlength="2000"></textarea></label>
           <div class="wide"><button type="button" class="secondary" id="informal-gps">Usar localização atual</button><button type="button" class="secondary" id="informal-clear-gps" hidden>Remover localização</button><p id="informal-gps-status" role="status">Localização opcional. Use somente se estiver no local do serviço.</p></div>
           <label class="checkbox wide"><input type="checkbox" name="published">Exibir este cadastro na busca pública</label>
-          <p class="footnote wide">Marque a divulgação apenas com a concordância do responsável. Informe somente os dados comerciais que ele deseja tornar públicos. Sem marcar, ele não aparece no catálogo, mas seus dados continuam públicos no repositório.</p>
+          <p class="footnote wide">Marque a divulgação apenas com a concordância do responsável. Informe somente os dados comerciais que ele deseja tornar públicos. Sem marcar, o cadastro fica como rascunho para a equipe.</p>
           <button class="primary" type="submit">Salvar cadastro informal</button>
           <p id="informal-status" role="status" aria-live="polite"></p>
         </form>
       </section>
       <section class="panel" id="coord-list-panel"><h2>Empresas e serviços registrados</h2><div id="coordination-list"></div></section>
     </main>
-    <script src="/conexaocomunidade/pages-bridge.js?v=restauracao-1"></script>
-    <script src="/conexaocomunidade/api-response.js?v=restauracao-1"></script>
-    <script src="/conexaocomunidade/coordination.js?v=restauracao-1"></script>
+    <script src="/conexaocomunidade/pages-independent.js"></script>
+    <script src="/conexaocomunidade/api-response.js"></script>
+    <script src="/conexaocomunidade/coordination.js"></script>
   </body>
 </html>

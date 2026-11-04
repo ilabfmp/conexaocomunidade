@@ -1,0 +1,66 @@
+name: Publicar Conexão Comunidade ILAB
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['dados/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: publicar-conexao-ilab
+  cancel-in-progress: false
+jobs:
+  verificar:
+    uses: ./.github/workflows/testar-pages.yml
+    permissions:
+      contents: read
+  preparar:
+    needs: verificar
+    runs-on: ubuntu-24.04
+    env:
+      PROTOTYPE_GITHUB_TOKEN: ${{ secrets.PROTOTYPE_GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Conferir contas institucionais sem sobrescrever existentes
+        if: env.PROTOTYPE_GITHUB_TOKEN != ''
+        continue-on-error: true
+        env:
+          PROTOTYPE_GITHUB_TOKEN: ${{ secrets.PROTOTYPE_GITHUB_TOKEN }}
+        run: node iniciar-contas.mjs
+      - name: Configurar esta instalação
+        env:
+          PROTOTYPE_GITHUB_TOKEN: ${{ secrets.PROTOTYPE_GITHUB_TOKEN }}
+        run: node preparar-publicacao.mjs
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Conferir ferramentas Android
+        run: |
+          if [ ! -f "$ANDROID_HOME/platforms/android-35/android.jar" ] || [ ! -x "$ANDROID_HOME/build-tools/35.0.0/aapt" ]; then
+            sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+          fi
+      - name: Gerar APK desta instalação
+        run: |
+          bash android/build-apk.sh
+          cp /tmp/comunidade-conectada-android-build/comunidade-conectada-teste.apk downloads/comunidade-conectada-teste.apk
+      - name: Preparar HTML, dados e downloads
+        run: node scripts/empacotar-pages.mjs
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site-publicado
+  publicar:
+    needs: preparar
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

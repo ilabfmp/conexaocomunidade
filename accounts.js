@@ -37,9 +37,7 @@ if (el("login")) {
       if (result.role === "coordination") {location.href = "/conexaocomunidade/coordenacao.html";return;}
       e.target.reset();
       location.href =
-        new URLSearchParams(location.search).get("next") === "report-form"
-          ? "/conexaocomunidade/relatar.html"
-          : new URLSearchParams(location.search).get("next") === "app"
+        new URLSearchParams(location.search).get("next") === "app"
           ? "/conexaocomunidade/comunidade.html?app=1&view=account"
           : new URLSearchParams(location.search).get("next") === "reports"
             ? "/conexaocomunidade/admin-relatos.html"
@@ -68,6 +66,18 @@ if (el("login")) {
         el("session-accounts").hidden = !admin;
         el("session-logs").hidden = !admin;
         el("admin-access-summary").hidden = !admin;
+        if(el("admin-integration")) {
+          el("admin-integration").hidden = !admin;
+          el("verify-integration").onclick = async () => {
+            const button=el("verify-integration"),output=el("integration-status");
+            button.disabled=true;output.textContent="Verificando conexão…";
+            try {
+              const d=await call("/api/admin-integration");
+              output.textContent="Conectado a "+d.repository+" · Token "+d.tokenMasked+" · Identificação "+d.fingerprint+" · Conferido em "+new Date(d.checkedAt).toLocaleString("pt-BR")+".";
+            } catch(e) {output.textContent=e.message;}
+            finally {button.disabled=false;}
+          };
+        }
         el("session-continue").href =
           new URLSearchParams(location.search).get("next") === "reports" && admin
             ? "/conexaocomunidade/admin-relatos.html"
@@ -79,7 +89,7 @@ if (el("login")) {
               ? "Gerenciar empresas"
               : "Acessar minha empresa";
         if (coordinator) {el("session-continue").href = "/conexaocomunidade/coordenacao.html";el("session-continue").textContent = "Acompanhar projeto";}
-        if (d.user.auth === "local" && !d.user.shared) {
+        if (d.user.auth === "local") {
           el("change").hidden = false;
           el("password-panel").hidden = false;
           el("recovery-email-panel").hidden = false;
@@ -90,7 +100,7 @@ if (el("login")) {
             if (d.user.auth === "local") {
               await call("/api/auth", "POST", { action: "logout" });
               location.reload();
-            } else location.href = "/signout-with-chatgpt?return_to=%2Fentrar.html";
+            } else location.href = "/conexaocomunidade/entrar.html";
           });
       }
     })
@@ -155,8 +165,7 @@ async function users() {
       el("reset").hidden = false;
       el("reset").scrollIntoView({ behavior: "smooth" });
     };
-    if (d.shared) { p.textContent = u.name + " · " + u.username + " · responsável (acesso compartilhado)"; row.append(p); }
-    else row.append(p, toggle, reset);
+    row.append(p, toggle, reset);
     el("users").append(row);
   }
 }
@@ -192,7 +201,7 @@ if (el("signup-company")) {
     e.preventDefault();
     action(form, async () => {
       const data = fields(form);
-      if (data.confirmPassword !== undefined && data.password !== data.confirmPassword) throw Error("As senhas precisam ser iguais.");
+      if (data.password !== data.confirmPassword) throw Error("As senhas precisam ser iguais.");
       await call("/api/auth", "POST", {
         action: "register-company",
         name: data.name,
@@ -210,7 +219,7 @@ if (el("signup-company")) {
         location.replace("/conexaocomunidade/teste.html?area=business");
       else if (d.user)
         status(
-          "Você está em uma conta de cliente. Para cadastrar um negócio, use sua conta de empresa.",
+          "Você já está conectado. Para criar uma conta de empresa diferente, saia da conta atual. A coordenação pode registrar empreendedores informais na sua própria área.",
         );
     })
     .catch((e) => status(e.message));
@@ -256,7 +265,7 @@ if (el("recovery-reset")) {
     e.preventDefault();
     action(e.target, async () => {
       const data = fields(e.target);
-      if (data.confirmPassword !== undefined && data.password !== data.confirmPassword) throw Error("As senhas precisam ser iguais.");
+      if (data.password !== data.confirmPassword) throw Error("As senhas precisam ser iguais.");
       const d = await call("/api/password-recovery", "POST", {
         action: "reset",
         token,
